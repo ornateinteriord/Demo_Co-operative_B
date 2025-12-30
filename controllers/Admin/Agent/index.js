@@ -219,9 +219,14 @@ const updateAgent = async (req, res) => {
 const getAgentById = async (req, res) => {
     try {
         const { agentId } = req.params;
-        console.log(agentId);
-        const allAgents = await AgentModel.find({});
-        const agent = allAgents.find(a => a.agent_id === agentId);
+
+        // Use direct findOne with $or to handle any data type
+        const agent = await AgentModel.findOne({
+            $or: [
+                { agent_id: agentId },
+                { agent_id: agentId.toString() }
+            ]
+        });
 
         if (!agent) {
             return res.status(404).json({
