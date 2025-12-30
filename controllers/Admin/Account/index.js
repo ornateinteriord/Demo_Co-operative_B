@@ -256,8 +256,14 @@ const getAccounts = async (req, res) => {
 const getAccountById = async (req, res) => {
     try {
         const { accountId } = req.params;
-        const allAccounts = await AccountsModel.find({});
-        const account = allAccounts.find(a => a.account_id === accountId);
+
+        // Use direct findOne instead of fetching all
+        const account = await AccountsModel.findOne({
+            $or: [
+                { account_id: accountId },
+                { account_id: accountId.toString() }
+            ]
+        });
 
         if (!account) {
             return res.status(404).json({

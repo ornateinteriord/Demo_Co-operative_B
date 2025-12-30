@@ -188,12 +188,28 @@ const updateMember = async (req, res) => {
         const { memberId } = req.params;
         const updateData = req.body;
 
-        // Find member by member_id
-        const member = await MemberModel.findOne({ member_id: memberId });
+        // Convert to number if it's a valid number string
+        const memberIdAsNumber = parseInt(memberId, 10);
+        const isValidNumber = !isNaN(memberIdAsNumber) && memberIdAsNumber.toString() === memberId;
+
+        // Build query conditions
+        const queryConditions = [
+            { member_id: memberId },  // As string
+        ];
+
+        if (isValidNumber) {
+            queryConditions.push({ member_id: memberIdAsNumber });
+        }
+
+        // Use $or to query for member_id as string, number, or any format
+        const member = await MemberModel.findOne({
+            $or: queryConditions
+        });
+
         if (!member) {
             return res.status(404).json({
                 success: false,
-                message: "Member not found"
+                message: `Member not found with ID: ${memberId}`
             });
         }
 
@@ -201,7 +217,7 @@ const updateMember = async (req, res) => {
         if (updateData.contactno && updateData.contactno !== member.contactno) {
             const existingContact = await MemberModel.findOne({
                 contactno: updateData.contactno,
-                member_id: { $ne: memberId }
+                _id: { $ne: member._id }  // Use _id instead of member_id for uniqueness
             });
             if (existingContact) {
                 return res.status(400).json({
@@ -211,12 +227,14 @@ const updateMember = async (req, res) => {
             }
         }
 
-        // Update the member
-        const updatedMember = await MemberModel.findOneAndUpdate(
-            { member_id: memberId },
+        // Update using _id to avoid type issues
+        const updatedMember = await MemberModel.findByIdAndUpdate(
+            member._id,
             { $set: updateData },
             { new: true, runValidators: true }
         );
+
+
 
         res.status(200).json({
             success: true,
@@ -224,6 +242,7 @@ const updateMember = async (req, res) => {
             data: updatedMember
         });
     } catch (error) {
+        console.error('[ERROR] Failed to update member:', error);
         res.status(500).json({
             success: false,
             message: "Failed to update member",
@@ -236,8 +255,24 @@ const updateMember = async (req, res) => {
 const getMemberById = async (req, res) => {
     try {
         const { memberId } = req.params;
-        const allMembers = await MemberModel.find({});
-        const member = allMembers.find(m => m.member_id === memberId);
+
+        // Convert to number if it's a valid number string
+        const memberIdAsNumber = parseInt(memberId, 10);
+        const isValidNumber = !isNaN(memberIdAsNumber) && memberIdAsNumber.toString() === memberId;
+
+        // Build query conditions
+        const queryConditions = [
+            { member_id: memberId },  // As string
+        ];
+
+        if (isValidNumber) {
+            queryConditions.push({ member_id: memberIdAsNumber });
+        }
+
+        // Use $or to query for member_id
+        const member = await MemberModel.findOne({
+            $or: queryConditions
+        });
 
         if (!member) {
             return res.status(404).json({
@@ -252,6 +287,7 @@ const getMemberById = async (req, res) => {
             data: member
         });
     } catch (error) {
+        console.error('[ERROR] Failed to fetch member:', error);
         res.status(500).json({
             success: false,
             message: "Failed to fetch member",

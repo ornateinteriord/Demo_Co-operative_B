@@ -145,8 +145,14 @@ const updateInterest = async (req, res) => {
 const getInterestById = async (req, res) => {
     try {
         const { interestId } = req.params;
-        const allInterests = await InterestModel.find({});
-        const interest = allInterests.find(i => i.interest_id === interestId);
+
+        // Use direct findOne instead of fetching all
+        const interest = await InterestModel.findOne({
+            $or: [
+                { interest_id: interestId },
+                { interest_id: interestId.toString() }
+            ]
+        });
 
         if (!interest) {
             return res.status(404).json({
