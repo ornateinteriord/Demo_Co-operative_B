@@ -107,7 +107,7 @@ const validateCommissionEligibility = (transaction, config) => {
 
     // Check if account type is commission-eligible (FD, RD, Pigmy)
     const accountTypeId = transaction.account_type?.toString();
-    const eligibleTypes = ["1", "2", "3"]; // FD, RD, Pigmy
+    const eligibleTypes = config.eligibleAccountTypes || ["1", "2", "3"]; // Fallback to old format
 
     console.log(`   Account Type ID: ${accountTypeId}`);
     console.log(`   Eligible Types: ${eligibleTypes.join(', ')}`);

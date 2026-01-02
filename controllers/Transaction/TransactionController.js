@@ -320,17 +320,22 @@ exports.handleCashfreeWebhook = async (req, res) => {
         console.log("🏷️ Headers:", JSON.stringify(req.headers, null, 2));
 
         // Get webhook details - using WEBHOOK_SECRET for signature verification
-        const signature = req.headers["x-cashfree-signature"];
+        const signature = req.headers["x-webhook-signature"]; // Cashfree uses x-webhook-signature
+        const timestamp = req.headers["x-webhook-timestamp"];
         const rawBody = req.rawBody; // This comes from index.js raw body middleware
         const secret = cashfreeConfig.WEBHOOK_SECRET;
 
         console.log("📄 Webhook raw body length:", rawBody?.length || 0);
+        console.log("🔑 Signature from header:", signature);
+        console.log("⏰ Timestamp from header:", timestamp);
 
         // Verify signature
-        if (signature && rawBody && secret) {
+        if (signature && rawBody && secret && timestamp) {
+            // Cashfree signature = HMAC-SHA256(timestamp + rawBody, secret)
+            const signatureData = timestamp + rawBody;
             const expected = crypto
                 .createHmac("sha256", secret)
-                .update(rawBody)
+                .update(signatureData)
                 .digest("base64");
 
             if (expected !== signature) {
@@ -339,13 +344,18 @@ exports.handleCashfreeWebhook = async (req, res) => {
                 console.log("Received:", signature);
                 return res.status(400).json({ error: "Invalid signature" });
             } else {
-                console.log("✅ Signature verified");
+                console.log("✅ Signature verified successfully");
             }
         } else {
-            console.log("⚠️ No signature or rawBody - might be test");
+            console.log("⚠️ Missing signature components:");
+            console.log("  - Signature:", signature ? "✓" : "✗");
+            console.log("  - Timestamp:", timestamp ? "✓" : "✗");
+            console.log("  - RawBody:", rawBody ? "✓" : "✗");
+            console.log("  - Secret:", secret ? "✓" : "✗");
+
             // In development, we might skip verification
             if (process.env.NODE_ENV !== "development") {
-                return res.status(400).json({ error: "Missing signature" });
+                return res.status(400).json({ error: "Missing signature components" });
             }
         }
 
