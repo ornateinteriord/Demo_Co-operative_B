@@ -1,64 +1,71 @@
 const crypto = require("crypto");
 require("dotenv").config();
 
-// Determine environment mode (matching BICCSL-Server approach)
-// In Vercel, NODE_ENV is automatically set to "production"
-const NODE_ENV = process.env.NODE_ENV || 'development';
-const isProduction = NODE_ENV === 'production' || NODE_ENV === 'PROD';
+/**
+ * Environment detection
+ * Vercel => production
+ */
+const NODE_ENV = process.env.NODE_ENV || "development";
+const IS_PRODUCTION =
+    NODE_ENV === "production" ||
+    NODE_ENV === "PROD" ||
+    process.env.PAYMENT_MODE === "PROD";
 
-// Select appropriate credentials based on environment
-// BICCSL-Server uses single variables: CASHFREE_APP_ID, CASHFREE_SECRET_KEY
-// For backward compatibility, we support both patterns
-const CASHFREE_APP_ID = isProduction
-    ? (process.env.CASHFREE_PRODUCTION_APP_ID || process.env.CASHFREE_APP_ID)
-    : (process.env.CASHFREE_SANDBOX_APP_ID || process.env.CASHFREE_APP_ID);
+/**
+ * Cashfree Credentials
+ * (Supports single & split env pattern)
+ */
+const CASHFREE_APP_ID = IS_PRODUCTION
+    ? process.env.CASHFREE_PRODUCTION_APP_ID || process.env.CASHFREE_APP_ID
+    : process.env.CASHFREE_SANDBOX_APP_ID || process.env.CASHFREE_APP_ID;
 
-const CASHFREE_SECRET_KEY = isProduction
-    ? (process.env.CASHFREE_PRODUCTION_SECRET_KEY || process.env.CASHFREE_SECRET_KEY)
-    : (process.env.CASHFREE_SANDBOX_SECRET_KEY || process.env.CASHFREE_SECRET_KEY);
+const CASHFREE_SECRET_KEY = IS_PRODUCTION
+    ? process.env.CASHFREE_PRODUCTION_SECRET_KEY || process.env.CASHFREE_SECRET_KEY
+    : process.env.CASHFREE_SANDBOX_SECRET_KEY || process.env.CASHFREE_SECRET_KEY;
 
-const WEBHOOK_SECRET = isProduction
-    ? (process.env.CASHFREE_PRODUCTION_WEBHOOK_SECRET || process.env.CASHFREE_WEBHOOK_SECRET)
-    : (process.env.CASHFREE_SANDBOX_WEBHOOK_SECRET || process.env.CASHFREE_WEBHOOK_SECRET);
+const WEBHOOK_SECRET = IS_PRODUCTION
+    ? process.env.CASHFREE_PRODUCTION_WEBHOOK_SECRET
+    : process.env.CASHFREE_SANDBOX_WEBHOOK_SECRET || process.env.CASHFREE_WEBHOOK_SECRET;
 
-// Validation
+/**
+ * Validation
+ */
 if (!CASHFREE_APP_ID || !CASHFREE_SECRET_KEY) {
-    console.error(`❌ ERROR: Missing Cashfree credentials for ${NODE_ENV} environment!`);
-    console.error(`Please check your .env file and ensure ${!isProduction ? 'CASHFREE_SANDBOX_APP_ID and CASHFREE_SANDBOX_SECRET_KEY' :
-        'CASHFREE_PRODUCTION_APP_ID and CASHFREE_PRODUCTION_SECRET_KEY (or CASHFREE_APP_ID and CASHFREE_SECRET_KEY)'
-        } are set.`);
+    console.error("❌ Cashfree credentials missing");
     process.exit(1);
 }
 
-// Cashfree API Base URLs
-const CASHFREE_BASE_URL = isProduction
+/**
+ * API Base URL
+ */
+const CASHFREE_BASE_URL = IS_PRODUCTION
     ? "https://api.cashfree.com"
     : "https://sandbox.cashfree.com";
 
 const X_API_VERSION = "2023-08-01";
 
-// Log environment and credential info for debugging
-console.log("=== Cashfree Configuration ===");
-console.log(`NODE_ENV: ${NODE_ENV}`);
-console.log(`Environment: ${isProduction ? 'PRODUCTION (Live)' : 'SANDBOX (Test)'}`);
-console.log(`Base URL: ${CASHFREE_BASE_URL}`);
-console.log(`App ID: ${CASHFREE_APP_ID}`);
-console.log(`Secret Key Length: ${CASHFREE_SECRET_KEY?.length || 0} chars`);
-console.log(`Webhook Secret Configured: ${!!WEBHOOK_SECRET}`);
-console.log("==============================");
+/**
+ * Logs (safe)
+ */
+console.log("================================");
+console.log("💳 Cashfree Configuration");
+console.log("ENV:", NODE_ENV);
+console.log("MODE:", IS_PRODUCTION ? "PRODUCTION" : "SANDBOX");
+console.log("BASE URL:", CASHFREE_BASE_URL);
+console.log("APP ID:", CASHFREE_APP_ID);
+console.log("WEBHOOK SECRET SET:", !!WEBHOOK_SECRET);
+console.log("================================");
 
-// Export configuration constants
 module.exports = {
     CASHFREE_APP_ID,
     CASHFREE_SECRET_KEY,
     CASHFREE_BASE_URL,
     X_API_VERSION,
     WEBHOOK_SECRET,
-    IS_PRODUCTION: isProduction,
-    IS_SANDBOX: !isProduction,  // For backward compatibility
-    NODE_ENV,
+    IS_PRODUCTION,
+    IS_SANDBOX: !IS_PRODUCTION,
 
-    // For backward compatibility with existing code
+    // Backward compatibility
     XClientId: CASHFREE_APP_ID,
-    XClientSecret: CASHFREE_SECRET_KEY
+    XClientSecret: CASHFREE_SECRET_KEY,
 };

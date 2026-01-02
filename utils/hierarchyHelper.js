@@ -1,6 +1,6 @@
-const { buildIntroducerHierarchy } = require("../../utils/commissionUtils");
-const MemberModel = require("../../models/member.model");
-const AgentModel = require("../../models/agent.model");
+const { buildIntroducerHierarchy } = require("./commissionUtils");
+const MemberModel = require("../models/member.model");
+const AgentModel = require("../models/agent.model");
 
 /**
  * Middleware to build introducer hierarchy when creating a new member
