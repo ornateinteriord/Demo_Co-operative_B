@@ -1,8 +1,9 @@
-const { createMember, getMembers, updateMember, getMemberById } = require("../controllers/Admin/Member/index");
+const { createMember, getMembers, updateMember, getMemberById, setIntroducerHierarchy } = require("../controllers/Admin/Member/index");
 const { createAgent, getAgents, updateAgent, getAgentById } = require("../controllers/Admin/Agent/index");
 const { createInterest, getInterests, updateInterest, getInterestById } = require("../controllers/Admin/Interest/index");
 const { getInterestsByAccountGroup, createAccount, getAccounts, getAccountById, updateAccount, getAccountBooks, getAccountGroups, getPreMaturityAccounts, getPostMaturityAccounts, getAccountTransactions, getAccountsForAssignment, updateAccountAssignment } = require("../controllers/Admin/Account/index");
 const { getDashboardCounts, getRecentData } = require("../controllers/Admin/Dashboard/index");
+const { migrateExistingMembersHierarchy } = require("../utils/hierarchyHelper");
 const Authenticated = require("../middlewares/auth");
 const authorizeRoles = require("../middlewares/authorizeRole");
 
@@ -13,6 +14,13 @@ router.post('/create-member', Authenticated, authorizeRoles(["ADMIN"]), createMe
 router.get('/get-members', Authenticated, authorizeRoles(["ADMIN"]), getMembers)
 router.put('/update-member/:memberId', Authenticated, authorizeRoles(["ADMIN"]), updateMember)
 router.get('/get-member/:memberId', Authenticated, authorizeRoles(["ADMIN", 'AGENT']), getMemberById)
+router.put('/member/:memberId/set-hierarchy', Authenticated, authorizeRoles(["ADMIN"]), setIntroducerHierarchy)
+
+// 🔧 FIX HIERARCHY - Run once to fix all existing members
+router.get('/fix-all-hierarchies', Authenticated, authorizeRoles(["ADMIN"]), async (req, res) => {
+    const result = await migrateExistingMembersHierarchy();
+    res.json(result);
+});
 
 // Agent routes
 router.post('/create-agent', Authenticated, authorizeRoles(["ADMIN"]), createAgent)

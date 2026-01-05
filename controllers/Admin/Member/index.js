@@ -1,5 +1,6 @@
 const MemberModel = require("../../../models/member.model");
 const UserModel = require("../../../models/user.model");
+const { addMemberHierarchy } = require("../../../utils/hierarchyHelper");
 
 // Create a new member
 const createMember = async (req, res) => {
@@ -28,7 +29,8 @@ const createMember = async (req, res) => {
             member_signature,
             entered_by,
             role,
-            status
+            status,
+            commission_eligible
         } = req.body;
 
         // Auto-increment member_id: Find max member_id and add 1
@@ -56,8 +58,8 @@ const createMember = async (req, res) => {
             }
         }
 
-        // Create new member with auto-generated member_id
-        const newMember = await MemberModel.create({
+        // Prepare member data
+        const memberData = {
             member_id: newMemberId,
             branch_id,
             date_of_joining,
@@ -82,8 +84,15 @@ const createMember = async (req, res) => {
             member_signature,
             entered_by,
             role: role || "USER",
-            status: status || "active"
-        });
+            status: status || "active",
+            commission_eligible: commission_eligible !== undefined ? commission_eligible : true
+        };
+
+        // 🔥 BUILD INTRODUCER HIERARCHY AUTOMATICALLY
+        const memberDataWithHierarchy = await addMemberHierarchy(memberData);
+
+        // Create new member with hierarchy
+        const newMember = await MemberModel.create(memberDataWithHierarchy);
 
         // Create user entry automatically
         try {
@@ -296,9 +305,93 @@ const getMemberById = async (req, res) => {
     }
 };
 
+// Set introducer hierarchy for a member
+const setIntroducerHierarchy = async (req, res) => {
+    try {
+        const { memberId } = req.params;
+        const { introducer_id } = req.body;
+
+        // Find the member
+        const member = await MemberModel.findOne({
+            $or: [
+                { member_id: memberId },
+                { member_id: parseInt(memberId) }
+            ]
+        });
+
+        if (!member) {
+            return res.status(404).json({
+                success: false,
+                message: "Member not found"
+            });
+        }
+
+        // If no introducer_id provided, use the member's existing introducer
+        const introducerId = introducer_id || member.introducer;
+
+        if (!introducerId) {
+            return res.status(400).json({
+                success: false,
+                message: "No introducer specified"
+            });
+        }
+
+        // Find the introducer
+        const introducer = await MemberModel.findOne({
+            $or: [
+                { member_id: introducerId },
+                { member_id: parseInt(introducerId) }
+            ]
+        });
+
+        if (!introducer) {
+            return res.status(404).json({
+                success: false,
+                message: "Introducer not found"
+            });
+        }
+
+        // Build the hierarchy: [direct introducer, ...introducer's hierarchy]
+        const newHierarchy = [introducerId];
+
+        if (introducer.introducer_hierarchy && introducer.introducer_hierarchy.length > 0) {
+            // Add introducer's hierarchy (max 6 more levels for total of 7)
+            const existingHierarchy = introducer.introducer_hierarchy.slice(0, 6);
+            newHierarchy.push(...existingHierarchy);
+        }
+
+        // Update member
+        member.introducer = introducerId;
+        member.introducer_hierarchy = newHierarchy;
+        await member.save();
+
+        console.log(`✅ Updated introducer hierarchy for member ${memberId}:`);
+        console.log(`   Introducer: ${introducerId}`);
+        console.log(`   Hierarchy:`, newHierarchy);
+
+        res.status(200).json({
+            success: true,
+            message: "Introducer hierarchy updated successfully",
+            data: {
+                member_id: member.member_id,
+                introducer: introducerId,
+                introducer_hierarchy: newHierarchy
+            }
+        });
+    } catch (error) {
+        console.error("Error setting introducer hierarchy:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to set introducer hierarchy",
+            error: error.message
+        });
+    }
+};
+
 module.exports = {
     createMember,
     getMembers,
     updateMember,
-    getMemberById
+    getMemberById,
+    setIntroducerHierarchy,
 };

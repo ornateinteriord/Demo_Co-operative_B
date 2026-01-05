@@ -134,6 +134,30 @@ const getAccountTypeName = (accountTypeId, config) => {
     return mapping[accountTypeId?.toString()] || "Other";
 };
 
+// Check if a member is a senior citizen based on date of birth
+const isSeniorCitizen = (dateOfBirth, ageThreshold = 60) => {
+    if (!dateOfBirth) {
+        return false;
+    }
+
+    try {
+        const dob = new Date(dateOfBirth);
+        const today = new Date();
+        let age = today.getFullYear() - dob.getFullYear();
+        const monthDiff = today.getMonth() - dob.getMonth();
+
+        // Adjust age if birthday hasn't occurred this year
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+            age--;
+        }
+
+        return age >= ageThreshold;
+    } catch (error) {
+        console.error("Error calculating age:", error);
+        return false;
+    }
+};
+
 // Calculate commissions for a transaction
 const calculateCommissions = async (transaction) => {
     try {
@@ -169,6 +193,19 @@ const calculateCommissions = async (transaction) => {
             console.log(`Source user ${memberId} not eligible for commission`);
             return [];
         }
+
+        // Check if source member is a senior citizen
+        const ageThreshold = config.seniorCitizenAgeThreshold || 60;
+        // Try both field names - dob is used in member model, date_of_birth is used in agent model
+        const dobField = sourceUser.dob || sourceUser.date_of_birth;
+        const isSenior = isSeniorCitizen(dobField, ageThreshold);
+        const citizenType = isSenior ? "seniorCitizen" : "general";
+
+        console.log(`\n👤 Source Member Info:`);
+        console.log(`   Name: ${sourceUser.name}`);
+        console.log(`   DOB: ${dobField}`);
+        console.log(`   Age Threshold: ${ageThreshold}`);
+        console.log(`   Status: ${isSenior ? '🧓 Senior Citizen' : '👥 General'}`);
 
         // Get introducer hierarchy
         const hierarchy = sourceUser.introducer_hierarchy || [];
@@ -213,7 +250,18 @@ const calculateCommissions = async (transaction) => {
                 continue;
             }
 
-            const commissionRate = levelConfig.rates[accountTypeName];
+            // Get rate based on citizen type (new structure) or fallback to old structure
+            let commissionRate;
+            const rateConfig = levelConfig.rates[accountTypeName];
+
+            if (typeof rateConfig === 'object' && rateConfig !== null) {
+                // New structure with general/seniorCitizen
+                commissionRate = rateConfig[citizenType];
+            } else {
+                // Old structure with direct rate
+                commissionRate = rateConfig;
+            }
+
             if (commissionRate === undefined || commissionRate === null) {
                 console.log(`No rate found for ${accountTypeName} at level ${level}`);
                 continue;
@@ -230,6 +278,8 @@ const calculateCommissions = async (transaction) => {
                 source_id: memberId,
                 source_name: sourceUser.name,
                 source_type: sourceType,
+                source_citizen_type: citizenType,
+                is_senior_citizen: isSenior,
                 transaction_id: transaction.transaction_id,
                 transaction_date: transaction.transaction_date || new Date(),
                 account_type: accountTypeName,
@@ -428,4 +478,5 @@ module.exports = {
     distributeCommissions,
     processTransactionCommission,
     getAccountTypeName,
+    isSeniorCitizen,
 };
