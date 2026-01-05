@@ -13,24 +13,50 @@ async function getCashfreeToken() {
     return cachedToken;
   }
 
-  const res = await axios.post(
-    `${cashfreeConfig.CASHFREE_BASE_URL}/payout/v1/authorize`,
-    {},
-    {
-      headers: {
-        "X-Client-Id": process.env.CI_APP_ID,
-        "X-Client-Secret": process.env.CI_SECRET_KEY,
-        "Content-Type": "application/json",
-      },
+  try {
+    // Use CI_APP_ID and CI_SECRET_KEY for Cashfree Verification/Payout API
+    const clientId = process.env.CI_APP_ID;
+    const clientSecret = process.env.CI_SECRET_KEY;
+
+    if (!clientId || !clientSecret) {
+      throw new Error("CI_APP_ID or CI_SECRET_KEY not configured in .env");
     }
-  );
 
-  const token = res.data?.data?.token;
-  if (!token) throw new Error("Cashfree auth failed");
+    console.log("🔑 Attempting Cashfree auth with:");
+    console.log("   Client ID:", clientId);
+    console.log("   Base URL:", cashfreeConfig.CASHFREE_BASE_URL);
 
-  cachedToken = token;
-  tokenExpiry = Date.now() + 55 * 60 * 1000; // 55 mins
-  return token;
+    const res = await axios.post(
+      `${cashfreeConfig.CASHFREE_BASE_URL}/payout/v1/authorize`,
+      {},
+      {
+        headers: {
+          "X-Client-Id": clientId,
+          "X-Client-Secret": clientSecret,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    console.log("✅ Cashfree auth response:", res.data);
+
+    const token = res.data?.data?.token;
+    if (!token) {
+      throw new Error("Cashfree auth failed - no token in response");
+    }
+
+    cachedToken = token;
+    tokenExpiry = Date.now() + 55 * 60 * 1000; // 55 mins
+    console.log("✅ Cashfree token obtained successfully");
+    return token;
+  } catch (error) {
+    console.error("❌ Cashfree auth error:", error.message);
+    if (error.response) {
+      console.error("   Response status:", error.response.status);
+      console.error("   Response data:", error.response.data);
+    }
+    throw new Error(`Cashfree auth failed: ${error.message}`);
+  }
 }
 
 /* =====================================================
@@ -121,44 +147,81 @@ exports.submitKYC = async (req, res) => {
     member.kycStatus = "PROCESSING";
     await member.save();
 
-    // 🔍 Call Cashfree (MANDATORY)
-    const validation = await validateBank({
-      name: member.name,
-      bankAccount,
-      ifsc,
-    });
+    // 🧪 SANDBOX BYPASS MODE (For local testing without Cashfree)
+    const SANDBOX_BYPASS = process.env.ENABLE_KYC_SANDBOX_BYPASS === "true";
 
-    console.log("🏦 Cashfree Validation Response:", validation);
+    if (SANDBOX_BYPASS) {
+      console.log("🧪 SANDBOX MODE: Bypassing Cashfree validation");
+      console.log("   Member:", member.name);
+      console.log("   Bank Account:", bankAccount);
+      console.log("   IFSC:", ifsc);
 
-    // ❌ If Cashfree fails → STOP
-    if (validation.status !== "SUCCESS") {
-      member.kycStatus = "FAILED";
-      member.kycFailReason = validation.message || "Bank verification failed";
+      // Auto-approve in sandbox mode
+      member.kycStatus = "APPROVED";
       await member.save();
 
-      return res.status(400).json({
-        success: false,
-        message: "KYC failed",
-        reason: member.kycFailReason,
+      return res.json({
+        success: true,
+        message: "KYC approved automatically (SANDBOX MODE)",
+        sandbox: true,
       });
     }
 
-    // ✅ Cashfree SUCCESS → AUTO APPROVE
-    member.kycStatus = "APPROVED";
-    await member.save();
+    // 🔍 Call Cashfree (MANDATORY in production)
+    try {
+      const validation = await validateBank({
+        name: member.name,
+        bankAccount,
+        ifsc,
+      });
 
-    // 🚀 Create beneficiary
-    setImmediate(() => createBeneficiary(member));
+      console.log("🏦 Cashfree Validation Response:", validation);
 
-    return res.json({
-      success: true,
-      message: "KYC approved automatically via Cashfree",
-    });
+      // ❌ If Cashfree fails → STOP
+      if (validation.status !== "SUCCESS") {
+        member.kycStatus = "FAILED";
+        member.kycFailReason = validation.message || "Bank verification failed";
+        await member.save();
+
+        return res.status(400).json({
+          success: false,
+          message: "KYC failed",
+          reason: member.kycFailReason,
+        });
+      }
+
+      // ✅ Cashfree SUCCESS → AUTO APPROVE
+      member.kycStatus = "APPROVED";
+      await member.save();
+
+      // 🚀 Create beneficiary
+      setImmediate(() => createBeneficiary(member));
+
+      return res.json({
+        success: true,
+        message: "KYC approved automatically via Cashfree",
+      });
+    } catch (cashfreeError) {
+      console.error("Cashfree API error:", cashfreeError.message);
+
+      // If Cashfree is down or auth fails, fail the KYC
+      member.kycStatus = "FAILED";
+      member.kycFailReason = `Cashfree error: ${cashfreeError.message}`;
+      await member.save();
+
+      return res.status(500).json({
+        success: false,
+        message: "KYC validation failed",
+        error: "Cashfree service unavailable",
+        details: cashfreeError.message
+      });
+    }
   } catch (err) {
     console.error("Auto KYC error:", err.message);
     return res.status(500).json({
       success: false,
       message: "Internal server error",
+      error: err.message
     });
   }
 };

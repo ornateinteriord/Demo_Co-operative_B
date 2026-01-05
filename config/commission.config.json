@@ -1,62 +1,186 @@
 {
     "enabled": true,
     "minimumTransactionAmount": 100,
-    "description": "Multi-level commission configuration for FD, RD, and Pigmy accounts",
+    "description": "Multi-level commission configuration based on deposit scheme interest rates with Senior Citizen support",
+    "seniorCitizenAgeThreshold": 60,
+    "depositTenureRates": {
+        "FD": {
+            "1_YEAR": {
+                "general": 9.00,
+                "seniorCitizen": 9.50
+            },
+            "2_YEAR": {
+                "general": 9.50,
+                "seniorCitizen": 10.00
+            },
+            "3_YEAR": {
+                "general": 10.00,
+                "seniorCitizen": 10.50
+            },
+            "4_YEAR": {
+                "general": 11.00,
+                "seniorCitizen": 11.50
+            },
+            "5_YEAR": {
+                "general": 12.00,
+                "seniorCitizen": 12.50
+            }
+        },
+        "RD": {
+            "1_YEAR": {
+                "general": 6.00,
+                "seniorCitizen": 6.50
+            },
+            "2_YEAR": {
+                "general": 7.00,
+                "seniorCitizen": 7.50
+            },
+            "3_YEAR": {
+                "general": 9.00,
+                "seniorCitizen": 9.50
+            },
+            "4_YEAR": {
+                "general": 10.00,
+                "seniorCitizen": 10.50
+            },
+            "5_YEAR": {
+                "general": 12.00,
+                "seniorCitizen": 12.50
+            }
+        },
+        "Pigmy": {
+            "1_YEAR": {
+                "general": 5.00,
+                "seniorCitizen": 5.50
+            },
+            "2_YEAR": {
+                "general": 6.00,
+                "seniorCitizen": 6.50
+            },
+            "3_YEAR": {
+                "general": 10.00,
+                "seniorCitizen": 10.50
+            }
+        }
+    },
     "levels": [
         {
             "level": 1,
             "rates": {
-                "FD": 4.50,
-                "RD": 4.50,
-                "Pigmy": 4.50
+                "FD": {
+                    "general": 9.00,
+                    "seniorCitizen": 9.50
+                },
+                "RD": {
+                    "general": 6.00,
+                    "seniorCitizen": 6.50
+                },
+                "Pigmy": {
+                    "general": 5.00,
+                    "seniorCitizen": 5.50
+                }
             }
         },
         {
             "level": 2,
             "rates": {
-                "FD": 1.00,
-                "RD": 1.00,
-                "Pigmy": 1.00
+                "FD": {
+                    "general": 9.50,
+                    "seniorCitizen": 10.00
+                },
+                "RD": {
+                    "general": 7.00,
+                    "seniorCitizen": 7.50
+                },
+                "Pigmy": {
+                    "general": 6.00,
+                    "seniorCitizen": 6.50
+                }
             }
         },
         {
             "level": 3,
             "rates": {
-                "FD": 0.50,
-                "RD": 0.50,
-                "Pigmy": 0.50
+                "FD": {
+                    "general": 10.00,
+                    "seniorCitizen": 10.50
+                },
+                "RD": {
+                    "general": 9.00,
+                    "seniorCitizen": 9.50
+                },
+                "Pigmy": {
+                    "general": 10.00,
+                    "seniorCitizen": 10.50
+                }
             }
         },
         {
             "level": 4,
             "rates": {
-                "FD": 0.25,
-                "RD": 0.25,
-                "Pigmy": 0.25
+                "FD": {
+                    "general": 11.00,
+                    "seniorCitizen": 11.50
+                },
+                "RD": {
+                    "general": 10.00,
+                    "seniorCitizen": 10.50
+                },
+                "Pigmy": {
+                    "general": 10.00,
+                    "seniorCitizen": 10.50
+                }
             }
         },
         {
             "level": 5,
             "rates": {
-                "FD": 0.25,
-                "RD": 0.25,
-                "Pigmy": 0.25
+                "FD": {
+                    "general": 12.00,
+                    "seniorCitizen": 12.50
+                },
+                "RD": {
+                    "general": 12.00,
+                    "seniorCitizen": 12.50
+                },
+                "Pigmy": {
+                    "general": 10.00,
+                    "seniorCitizen": 10.50
+                }
             }
         },
         {
             "level": 6,
             "rates": {
-                "FD": 0.25,
-                "RD": 0.25,
-                "Pigmy": 0.25
+                "FD": {
+                    "general": 12.00,
+                    "seniorCitizen": 12.50
+                },
+                "RD": {
+                    "general": 12.00,
+                    "seniorCitizen": 12.50
+                },
+                "Pigmy": {
+                    "general": 10.00,
+                    "seniorCitizen": 10.50
+                }
             }
         },
         {
             "level": 7,
             "rates": {
-                "FD": 0.25,
-                "RD": 0.25,
-                "Pigmy": 0.25
+                "FD": {
+                    "general": 12.00,
+                    "seniorCitizen": 12.50
+                },
+                "RD": {
+                    "general": 12.00,
+                    "seniorCitizen": 12.50
+                },
+                "Pigmy": {
+                    "general": 10.00,
+                    "seniorCitizen": 10.50
+                }
             }
         }
     ],
@@ -75,9 +199,16 @@
         "AGP005"
     ],
     "notes": [
-        "Commission rates are in percentage (%)",
+        "Commission rates are based on deposit scheme interest rates",
+        "Rates are in percentage (%)",
         "Level 1 is the direct introducer",
         "Maximum 7 levels of commission hierarchy",
+        "Senior citizens (60+ years) receive higher commission rates (0.50% more)",
+        "FD rates: 9.00-12.00% (general), 9.50-12.50% (senior citizen)",
+        "RD rates: 6.00-12.00% (general), 6.50-12.50% (senior citizen)",
+        "Pigmy rates: 5.00-10.00% (general), 5.50-10.50% (senior citizen)",
+        "Rates progressively increase from Level 1 to Level 5",
+        "Levels 6-7 maintain Level 5 rates",
         "Account types AGP001-AGP005 are eligible for commission (FD, RD, Pigmy)",
         "This configuration can be updated dynamically via the admin API"
     ]
