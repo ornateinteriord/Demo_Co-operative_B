@@ -350,8 +350,8 @@ exports.handleCashfreeWebhook = async (req, res) => {
 
         // Verify signature
         if (signature && rawBody && secret && timestamp) {
-            // Cashfree signature = HMAC-SHA256(timestamp + rawBody, secret)
-            const signatureData = timestamp + rawBody;
+            // Cashfree signature = HMAC-SHA256(timestamp + "." + rawBody, secret)
+            const signatureData = `${timestamp}.${rawBody}`;
             const expected = crypto
                 .createHmac("sha256", secret)
                 .update(signatureData)
@@ -361,7 +361,7 @@ exports.handleCashfreeWebhook = async (req, res) => {
                 console.error("❌ INVALID SIGNATURE");
                 console.log("Expected:", expected);
                 console.log("Received:", signature);
-                return res.status(400).json({ error: "Invalid signature" });
+                return res.status(401).json({ error: "Invalid signature" });
             } else {
                 console.log("✅ Signature verified successfully");
             }
@@ -374,7 +374,7 @@ exports.handleCashfreeWebhook = async (req, res) => {
 
             // In development, we might skip verification
             if (process.env.NODE_ENV !== "development") {
-                return res.status(400).json({ error: "Missing signature components" });
+                return res.status(401).json({ error: "Missing signature components" });
             }
         }
 
