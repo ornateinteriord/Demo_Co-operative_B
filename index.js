@@ -143,7 +143,24 @@ app.get("/transaction/webhook/cashfree/status", (_req, res) => {
 });
 
 /* =====================================================
-   📌 API ROUTES
+   � DATABASE CONNECTION MIDDLEWARE (for serverless)
+   ===================================================== */
+
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (error) {
+    console.error('❌ Database Connection Error:', error.message);
+    return res.status(500).json({
+      success: false,
+      message: 'Database connection failed. Please try again.'
+    });
+  }
+});
+
+/* =====================================================
+   �📌 API ROUTES
    ===================================================== */
 
 app.use("/auth", AuthRoutes);
