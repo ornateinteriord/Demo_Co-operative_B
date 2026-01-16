@@ -4,6 +4,7 @@ const TransactionModel = require("../../models/transaction.model");
 const CommissionModel = require("../../models/commission.model");
 const AgentModel = require("../../models/agent.model");
 const generateTransactionId = require("../../utils/generateTransactionId");
+const { processTransactionCommission } = require("../../utils/commissionUtils");
 
 // Get all commission transactions for an agent
 const getCommissionTransactions = async (req, res) => {
@@ -288,6 +289,16 @@ const collectPayment = async (req, res) => {
             status: "Completed",
             collected_by: agentId
         });
+
+        // Process commission for introducers
+        try {
+            console.log("💰 Processing commission for agent collection...");
+            const commissionResult = await processTransactionCommission(transaction);
+            console.log("💰 Commission processing result:", commissionResult);
+        } catch (commissionError) {
+            console.error("❌ Commission processing error:", commissionError.message);
+            // Don't fail the collection if commission fails
+        }
 
         res.status(200).json({
             success: true,
