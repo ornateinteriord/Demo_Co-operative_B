@@ -2,6 +2,7 @@ const ReceiptsModel = require("../../../models/receipts.model.js");
 const AccountsModel = require("../../../models/accounts.model.js");
 const TransactionModel = require("../../../models/transaction.model.js");
 const generateTransactionId = require("../../../utils/generateTransactionId.js");
+const { processTransactionCommission } = require("../../../utils/commissionUtils");
 
 // Create a new receipt
 const createReceipt = async (req, res) => {
@@ -107,6 +108,17 @@ const createReceipt = async (req, res) => {
                         reference_no: newReceiptId,
                         collected_by: entered_by
                     });
+
+                    // Process commission for introducers
+                    try {
+                        console.log("💰 Processing commission for admin receipt...");
+                        const commissionResult = await processTransactionCommission(transaction);
+                        console.log("💰 Commission processing result:", commissionResult);
+                    } catch (commissionError) {
+                        console.error("❌ Commission processing error:", commissionError.message);
+                        // Don't fail the receipt if commission fails
+                    }
+
                     console.log(`📝 Transaction created: ${transaction.transaction_id}`);
                 } else {
                     console.log(`❌ Failed to update account balance`);
