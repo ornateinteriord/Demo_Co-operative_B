@@ -343,9 +343,12 @@ const distributeCommissions = async (commissions) => {
                 });
 
                 if (agent) {
-                    // Update agent's commission balance
-                    agent.commission_balance = (parseFloat(agent.commission_balance) || 0) + commission.commission_amount;
-                    await agent.save();
+                    // Update agent's commission balance using updateOne to bypass validation
+                    const newBalance = (parseFloat(agent.commission_balance) || 0) + commission.commission_amount;
+                    await AgentModel.updateOne(
+                        { agent_id: commission.beneficiary_id },
+                        { $set: { commission_balance: newBalance } }
+                    );
 
                     // Update commission record as credited
                     commissionRecord.status = "CREDITED";
@@ -381,25 +384,14 @@ const distributeCommissions = async (commissions) => {
                 });
 
                 if (member) {
-                    // Update member's commission balance
-                    member.commission_balance = (parseFloat(member.commission_balance) || 0) + commission.commission_amount;
-                    await member.save();
-
-                    // Also try to credit their first active account if exists
-                    const beneficiaryAccount = await AccountsModel.findOne({
-                        $or: [
-                            { member_id: commission.beneficiary_id },
-                            { member_id: parseInt(commission.beneficiary_id) }
-                        ],
-                        status: "active",
-                    }).sort({ date_of_opening: 1 });
-
-                    if (beneficiaryAccount) {
-                        // Update account balance
-                        beneficiaryAccount.account_amount =
-                            (parseFloat(beneficiaryAccount.account_amount) || 0) + commission.commission_amount;
-                        await beneficiaryAccount.save();
-                    }
+                    // Update member's commission balance only
+                    // NOTE: Commission is NOT added to account balance - it goes to commission_balance only
+                    // Use updateOne to bypass validation (some members may have empty required fields like 'introducer')
+                    const newBalance = (parseFloat(member.commission_balance) || 0) + commission.commission_amount;
+                    await MemberModel.updateOne(
+                        { member_id: commission.beneficiary_id },
+                        { $set: { commission_balance: newBalance } }
+                    );
 
                     // Update commission record as credited
                     commissionRecord.status = "CREDITED";
