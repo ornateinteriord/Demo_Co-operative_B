@@ -34,7 +34,7 @@ const commissionSchema = new mongoose.Schema(
         },
         source_type: {
             type: String,
-            enum: ["MEMBER", "AGENT"],
+            enum: ["MEMBER", "AGENT", "ADMIN"],
             required: true,
         },
         // Transaction Details

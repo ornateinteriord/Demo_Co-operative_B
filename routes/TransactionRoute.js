@@ -1,6 +1,12 @@
 const express = require("express");
 const router = express.Router();
+console.log("TransactionRoute.js loaded"); // DEBUG LOG
+
+router.get('/test-route', (req, res) => {
+    res.json({ message: "Transaction route is working" });
+});
 const { getTransactions, addTransaction, getAllTransactions, createPaymentOrder, handleCashfreeWebhook, checkPaymentStatus, transferMoney, requestWithdraw, triggerTestWebhook, testPaymentStatus } = require("../controllers/Transaction/TransactionController");
+const { withdrawCommission, getWithdrawalRequests, approveWithdrawal } = require("../controllers/Transaction/WithdrawalController");
 const { submitKYC, getKycSubmissions } = require("../controllers/KYC/KycController");
 const Authenticated = require("../middlewares/auth");
 const authorizeRoles = require("../middlewares/authorizeRole");
@@ -15,6 +21,11 @@ router.post('/transfer-money', Authenticated, transferMoney); // /transaction/tr
 
 // Withdraw Request
 router.post('/withdraw-request', Authenticated, requestWithdraw); // /transaction/withdraw-request
+router.post('/withdraw-commission', Authenticated, authorizeRoles(["USER", "AGENT"]), withdrawCommission);
+
+// Admin Withdrawal Management
+router.get('/withdrawal-requests', Authenticated, authorizeRoles(["ADMIN"]), getWithdrawalRequests);
+router.post('/approve-withdrawal', Authenticated, authorizeRoles(["ADMIN"]), approveWithdrawal);
 
 // Cashfree Routes
 router.post('/create-order', createPaymentOrder);
