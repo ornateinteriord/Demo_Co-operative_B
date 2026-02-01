@@ -41,6 +41,10 @@ const getUserTransactions = async (req, res) => {
     }
 };
 
+const WithdrawRequestModel = require("../../models/withdrawRequest.model");
+
+// ... (existing code for getUserTransactions)
+
 // Get all commission transactions for a member
 const getCommissionTransactions = async (req, res) => {
     try {
@@ -53,38 +57,76 @@ const getCommissionTransactions = async (req, res) => {
             });
         }
 
-        // Get member details for commission_balance
-        const member = await MemberModel.findOne({ member_id: memberId });
-        const commissionBalance = member ? (member.commission_balance || 0) : 0;
-
-        // Find all commission transactions where this member is the beneficiary
+        // 1. Fetch Commission Credits (EARNED)
         const commissions = await CommissionModel.find({
-            beneficiary_id: memberId
-        }).sort({ createdAt: -1 });
+            beneficiary_id: memberId,
+            status: { $in: ['CREDITED', 'PENDING'] } // Only get earnings, not withdrawals (if any old ones exist)
+        }).lean();
 
-        // Calculate summary statistics
+        // 2. Fetch Withdrawal Requests (DEBITS) - All statuses
+        const withdrawals = await WithdrawRequestModel.find({
+            member_id: memberId,
+            source_type: 'Commission'
+        }).lean();
+
+        // 3. Calculate Totals
         const totalEarned = commissions
             .filter(c => c.status === "CREDITED")
-            .reduce((sum, c) => sum + c.commission_amount, 0);
+            .reduce((sum, c) => sum + (c.commission_amount || 0), 0);
 
-        const totalPending = commissions
+        const totalPendingCommissions = commissions
             .filter(c => c.status === "PENDING")
-            .reduce((sum, c) => sum + c.commission_amount, 0);
+            .reduce((sum, c) => sum + (c.commission_amount || 0), 0);
 
-        const totalWithdrawn = commissions
-            .filter(c => c.status === "WITHDRAWN")
-            .reduce((sum, c) => sum + c.commission_amount, 0);
+        const totalWithdrawn = withdrawals
+            .filter(w => w.status === 'Completed' || w.status === 'Approved')
+            .reduce((sum, w) => sum + (w.amount || 0), 0);
+
+        const totalPendingWithdrawals = withdrawals
+            .filter(w => w.status === 'Pending')
+            .reduce((sum, w) => sum + (w.amount || 0), 0);
+
+        // 4. Calculate Available Balance
+        const availableBalance = totalEarned - (totalWithdrawn + totalPendingWithdrawals);
+
+        // 5. Merge and Format Transactions for Frontend
+        const commissionDocs = commissions.map(c => ({
+            _id: c._id,
+            transaction_id: c.transaction_id || c.commission_id,
+            date: c.transaction_date || c.createdAt,
+            description: c.description || 'Commission Received',
+            amount: c.commission_amount,
+            status: c.status,
+            type: 'CREDIT',
+            source: 'Commission'
+        }));
+
+        const withdrawalDocs = withdrawals.map(w => ({
+            _id: w._id,
+            transaction_id: w.transaction_id || w.withdraw_request_id,
+            date: w.requested_date || w.createdAt,
+            description: `Withdrawal Request${w.status === 'Rejected' ? ' (Rejected)' : ''}`,
+            amount: w.amount,
+            status: w.status === 'Completed' ? 'WITHDRAWN' : w.status === 'Pending' ? 'PENDING' : w.status,
+            type: 'DEBIT',
+            source: 'Withdrawal'
+        }));
+
+        // Combine and Sort by Date Descending
+        const allTransactions = [...commissionDocs, ...withdrawalDocs].sort((a, b) =>
+            new Date(b.date) - new Date(a.date)
+        );
 
         res.status(200).json({
             success: true,
             message: "Commission transactions fetched successfully",
             data: {
-                transactions: commissions,
+                transactions: allTransactions,
                 summary: {
                     totalEarned,
-                    totalPending,
-                    totalWithdrawn,
-                    availableBalance: totalEarned - totalWithdrawn // Calculate from transactions
+                    totalPending: totalPendingCommissions,
+                    totalWithdrawn: totalWithdrawn + totalPendingWithdrawals,
+                    availableBalance: availableBalance > 0 ? availableBalance : 0
                 }
             }
         });
