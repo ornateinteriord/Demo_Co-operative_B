@@ -30,7 +30,7 @@ const getInterestsByAccountGroup = async (req, res) => {
         }
 
         // Map account_group_name to plan_type
-        // The interest model uses plan_type enum: ["FD", "RD", "PIGMY", "SAVING"]
+        // The interest model uses plan_type enum: ["FD", "RD", "PIGMY", "SAVING", "PIGMY SAVING", "PIGMY LOAN", "PIGMY GOLD LOAN"]
         const planTypeMapping = {
             "FIXED DEPOSIT": "FD",
             "FD": "FD",
@@ -41,7 +41,10 @@ const getInterestsByAccountGroup = async (req, res) => {
             "SAVING": "SAVING",
             "SAVINGS": "SAVING",
             "SAVINGS BANK": "SAVING",
-            "SB": "SAVING"
+            "SB": "SAVING",
+            "PIGMY SAVING": "PIGMY SAVING",
+            "PIGMY LOAN": "PIGMY LOAN",
+            "PIGMY GOLD LOAN": "PIGMY GOLD LOAN"
         };
 
         // Try to match the account group name (case-insensitive)

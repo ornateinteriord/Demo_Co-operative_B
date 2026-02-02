@@ -10,23 +10,25 @@ const interestSchema = new mongoose.Schema(
 
     plan_type: {
       type: String,
-      enum: ["FD", "RD", "PIGMY", "SAVING"],
+      enum: ["FD", "RD", "PIGMY", "SAVING", "PIGMY SAVING", "PIGMY LOAN", "PIGMY GOLD LOAN"],
       required: true,
     },
 
     interest_name: {
       type: String,
-      required: true,
+      default: null,
     },
+
+    duration: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
+
     interest_rate_general: {
       type: Number,
       default: null,
     },
-    interest_rate_senior: {
-      type: Number,
-      required: true,
-    },
-
     interest_rate_senior: {
       type: Number,
       required: true,
