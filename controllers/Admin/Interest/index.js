@@ -15,17 +15,17 @@ const createInterest = async (req, res) => {
             status
         } = req.body;
 
-        // Validate required fields
-        if (!plan_type || !interest_name || duration === undefined ||
+        // Validate required fields - interest_name is optional (has default: null in model)
+        if (!plan_type || duration === undefined ||
             interest_rate_general === undefined || interest_rate_senior === undefined) {
             return res.status(400).json({
                 success: false,
-                message: "Missing required fields: plan_type, interest_name, duration, interest_rate_general, and interest_rate_senior are required"
+                message: "Missing required fields: plan_type, duration, interest_rate_general, and interest_rate_senior are required"
             });
         }
 
         // Validate plan_type enum
-        const validPlanTypes = ["FD", "RD", "PIGMY", "SAVING"];
+        const validPlanTypes = ["FD", "RD", "PIGMY", "SAVING", "PIGMY SAVING", "PIGMY LOAN", "PIGMY GOLD LOAN"];
         if (!validPlanTypes.includes(plan_type)) {
             return res.status(400).json({
                 success: false,
