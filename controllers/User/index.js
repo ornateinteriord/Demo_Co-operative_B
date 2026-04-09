@@ -140,7 +140,63 @@ const getCommissionTransactions = async (req, res) => {
     }
 };
 
+// Get direct sponsors (tree logic)
+const getSponsers = async (req, res) => {
+    try {
+        const { memberId } = req.params;
+
+        if (!memberId) {
+            return res.status(400).json({
+                success: false,
+                message: "Member ID is required"
+            });
+        }
+
+        // Fetch user basic details for the top node
+        const parentUser = await MemberModel.findOne({ member_id: memberId })
+            .select("name member_id status profile_image date_of_joining");
+
+        if (!parentUser) {
+            return res.status(404).json({
+                success: false,
+                message: "Member not found"
+            });
+        }
+
+        // Fetch direct sponsored users (children nodes)
+        const sponsoredUsers = await MemberModel.find({ introducer: memberId })
+            .select("name member_id status profile_image date_of_joining");
+
+        res.status(200).json({
+            success: true,
+            message: "Sponsors fetched successfully",
+            parentUser: {
+                Name: parentUser.name,
+                Member_id: parentUser.member_id,
+                status: parentUser.status,
+                profile_image: parentUser.member_image,
+                Date_of_joining: parentUser.date_of_joining
+            },
+            sponsoredUsers: sponsoredUsers.map(user => ({
+                Name: user.name,
+                Member_id: user.member_id,
+                status: user.status,
+                profile_image: user.member_image,
+                Date_of_joining: user.date_of_joining
+            }))
+        });
+    } catch (error) {
+        console.error("Error fetching sponsors:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch sponsors",
+            error: error.message
+        });
+    }
+};
+
 module.exports = {
     getUserTransactions,
-    getCommissionTransactions
+    getCommissionTransactions,
+    getSponsers
 };
