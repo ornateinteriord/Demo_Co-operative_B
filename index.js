@@ -56,6 +56,7 @@ app.post(
 const allowedOrigins = [
   "http://localhost:5173",
   "https://msi-copy.vercel.app",
+  "https://demo-co-operative.vercel.app",
   process.env.FRONTEND_URL,
   process.env.FRONTEND_URL_DEV,
   process.env.FRONTEND_URL_PROD,
