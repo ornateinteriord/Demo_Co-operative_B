@@ -18,7 +18,7 @@
             "headers": [
                 {
                     "key": "Access-Control-Allow-Origin",
-                    "value": "https://nidhi-ltd.vercel.app"
+                    "value": "https://demo-co-operative.vercel.app"
                 },
                 {
                     "key": "Access-Control-Allow-Methods",
