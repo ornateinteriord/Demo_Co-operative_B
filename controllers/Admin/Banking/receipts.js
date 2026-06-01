@@ -3,6 +3,7 @@ const AccountsModel = require("../../../models/accounts.model.js");
 const TransactionModel = require("../../../models/transaction.model.js");
 const generateTransactionId = require("../../../utils/generateTransactionId.js");
 const { processTransactionCommission } = require("../../../utils/commissionUtils");
+const mongoose = require("mongoose");
 
 // Create a new receipt
 const createReceipt = async (req, res) => {
@@ -60,8 +61,13 @@ const createReceipt = async (req, res) => {
         if (account_details && account_details.account_id && amount > 0) {
             console.log(`📥 Receipt: Processing account update for account_id: ${account_details.account_id}, amount: ${amount}`);
 
+            const query = [{ account_id: account_details.account_id }];
+            if (mongoose.Types.ObjectId.isValid(account_details.account_id)) {
+                query.push({ _id: account_details.account_id });
+            }
+
             // First, check if account exists and handle null account_amount
-            const existingAccount = await AccountsModel.findOne({ account_id: account_details.account_id });
+            const existingAccount = await AccountsModel.findOne({ $or: query });
 
             if (!existingAccount) {
                 console.log(`❌ Account not found: ${account_details.account_id}`);

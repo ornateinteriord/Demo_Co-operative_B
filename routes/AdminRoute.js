@@ -11,15 +11,15 @@ const { createMaturityPayment } = require("../controllers/Admin/Banking/cashTran
 const router = require("express").Router();
 
 // Member routes
-router.post('/create-member', Authenticated, authorizeRoles(["ADMIN"]), createMember)
-router.get('/get-members', Authenticated, authorizeRoles(["ADMIN"]), getMembers)
-router.put('/update-member/:memberId', Authenticated, authorizeRoles(["ADMIN"]), updateMember)
-router.get('/get-member/:memberId', Authenticated, authorizeRoles(["ADMIN", 'AGENT']), getMemberById)
-router.put('/member/:memberId/set-hierarchy', Authenticated, authorizeRoles(["ADMIN"]), setIntroducerHierarchy)
+router.post('/create-member', Authenticated, authorizeRoles(["ADMIN", "ADMIN_01"]), createMember)
+router.get('/get-members', Authenticated, authorizeRoles(["ADMIN", "ADMIN_01"]), getMembers)
+router.put('/update-member/:memberId', Authenticated, authorizeRoles(["ADMIN", "ADMIN_01"]), updateMember)
+router.get('/get-member/:memberId', Authenticated, authorizeRoles(["ADMIN", "ADMIN_01", "AGENT"]), getMemberById)
+router.put('/member/:memberId/set-hierarchy', Authenticated, authorizeRoles(["ADMIN", "ADMIN_01"]), setIntroducerHierarchy)
 
 // 🔧 FIX HIERARCHY - Run to rebuild all member and agent hierarchies
 // Add ?force=true to force rebuild even existing hierarchies
-router.get('/fix-all-hierarchies', Authenticated, authorizeRoles(["ADMIN"]), async (req, res) => {
+router.get('/fix-all-hierarchies', Authenticated, authorizeRoles(["ADMIN", "ADMIN_01"]), async (req, res) => {
     try {
         const forceRebuild = req.query.force === 'true';
         console.log(`\n${"=".repeat(60)}`);
@@ -53,36 +53,36 @@ router.get('/fix-all-hierarchies', Authenticated, authorizeRoles(["ADMIN"]), asy
 });
 
 // Agent routes
-router.post('/create-agent', Authenticated, authorizeRoles(["ADMIN"]), createAgent)
-router.get('/get-agents', Authenticated, authorizeRoles(["ADMIN"]), getAgents)
-router.put('/update-agent/:agentId', Authenticated, authorizeRoles(["ADMIN"]), updateAgent)
-router.get('/get-agent/:agentId', Authenticated, authorizeRoles(["ADMIN"]), getAgentById)
+router.post('/create-agent', Authenticated, authorizeRoles(["ADMIN", "ADMIN_01"]), createAgent)
+router.get('/get-agents', Authenticated, authorizeRoles(["ADMIN", "ADMIN_01"]), getAgents)
+router.put('/update-agent/:agentId', Authenticated, authorizeRoles(["ADMIN", "ADMIN_01"]), updateAgent)
+router.get('/get-agent/:agentId', Authenticated, authorizeRoles(["ADMIN", "ADMIN_01"]), getAgentById)
 
 // Interest routes
-router.post('/create-interest', Authenticated, authorizeRoles(["ADMIN"]), createInterest)
-router.get('/get-interests', Authenticated, authorizeRoles(["ADMIN"]), getInterests)
-router.put('/update-interest/:interestId', Authenticated, authorizeRoles(["ADMIN"]), updateInterest)
-router.get('/get-interest/:interestId', Authenticated, authorizeRoles(["ADMIN"]), getInterestById)
+router.post('/create-interest', Authenticated, authorizeRoles(["ADMIN", "ADMIN_01"]), createInterest)
+router.get('/get-interests', Authenticated, authorizeRoles(["ADMIN", "ADMIN_01"]), getInterests)
+router.put('/update-interest/:interestId', Authenticated, authorizeRoles(["ADMIN", "ADMIN_01"]), updateInterest)
+router.get('/get-interest/:interestId', Authenticated, authorizeRoles(["ADMIN", "ADMIN_01"]), getInterestById)
 
 // Account routes
-router.get('/get-interests-by-account-group/:account_group_id', Authenticated, authorizeRoles(["ADMIN", "AGENT"]), getInterestsByAccountGroup)
-router.post('/create-account', Authenticated, authorizeRoles(["ADMIN"]), createAccount)
-router.get('/get-accounts', Authenticated, authorizeRoles(["ADMIN"]), getAccounts)
-router.get('/get-account/:accountId', Authenticated, authorizeRoles(["ADMIN"]), getAccountById)
-router.put('/update-account/:accountId', Authenticated, authorizeRoles(["ADMIN"]), updateAccount)
-router.get('/get-account-books', Authenticated, authorizeRoles(["ADMIN", "AGENT"]), getAccountBooks)
-router.get('/get-account-groups', Authenticated, authorizeRoles(["ADMIN", "AGENT"]), getAccountGroups)
-router.get('/get-pre-maturity-accounts', Authenticated, authorizeRoles(["ADMIN"]), getPreMaturityAccounts)
-router.get('/get-post-maturity-accounts', Authenticated, authorizeRoles(["ADMIN"]), getPostMaturityAccounts)
-router.get('/accounts/transactions/:memberId', Authenticated, authorizeRoles(["ADMIN"]), getAccountTransactions)
+router.get('/get-interests-by-account-group/:account_group_id', Authenticated, authorizeRoles(["ADMIN", "ADMIN_01", "AGENT"]), getInterestsByAccountGroup)
+router.post('/create-account', Authenticated, authorizeRoles(["ADMIN", "ADMIN_01"]), createAccount)
+router.get('/get-accounts', Authenticated, authorizeRoles(["ADMIN", "ADMIN_01"]), getAccounts)
+router.get('/get-account/:accountId', Authenticated, authorizeRoles(["ADMIN", "ADMIN_01"]), getAccountById)
+router.put('/update-account/:accountId', Authenticated, authorizeRoles(["ADMIN", "ADMIN_01"]), updateAccount)
+router.get('/get-account-books', Authenticated, authorizeRoles(["ADMIN", "ADMIN_01", "AGENT"]), getAccountBooks)
+router.get('/get-account-groups', Authenticated, authorizeRoles(["ADMIN", "ADMIN_01", "AGENT"]), getAccountGroups)
+router.get('/get-pre-maturity-accounts', Authenticated, authorizeRoles(["ADMIN", "ADMIN_01"]), getPreMaturityAccounts)
+router.get('/get-post-maturity-accounts', Authenticated, authorizeRoles(["ADMIN", "ADMIN_01"]), getPostMaturityAccounts)
+router.get('/accounts/transactions/:memberId', Authenticated, authorizeRoles(["ADMIN", "ADMIN_01"]), getAccountTransactions)
 
 // Agent Assignment routes
-router.get('/get-accounts-for-assignment', Authenticated, authorizeRoles(["ADMIN"]), getAccountsForAssignment)
-router.put('/update-account-assignment/:accountId', Authenticated, authorizeRoles(["ADMIN"]), updateAccountAssignment)
+router.get('/get-accounts-for-assignment', Authenticated, authorizeRoles(["ADMIN", "ADMIN_01"]), getAccountsForAssignment)
+router.put('/update-account-assignment/:accountId', Authenticated, authorizeRoles(["ADMIN", "ADMIN_01"]), updateAccountAssignment)
 
 // Dashboard routes
-router.get('/get-dashboard-counts', Authenticated, authorizeRoles(["ADMIN"]), getDashboardCounts)
-router.get('/get-recent-data', Authenticated, authorizeRoles(["ADMIN"]), getRecentData)
-router.post("/maturity-payment", Authenticated, authorizeRoles(["ADMIN"]), createMaturityPayment);
+router.get('/get-dashboard-counts', Authenticated, authorizeRoles(["ADMIN", "ADMIN_01"]), getDashboardCounts)
+router.get('/get-recent-data', Authenticated, authorizeRoles(["ADMIN", "ADMIN_01"]), getRecentData)
+router.post("/maturity-payment", Authenticated, authorizeRoles(["ADMIN", "ADMIN_01"]), createMaturityPayment);
 
 module.exports = router;

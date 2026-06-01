@@ -12,10 +12,10 @@ const authorizeRoles = require("../middlewares/authorizeRole");
 
 
 // Payments endpoints
-router.post("/payments", Authenticated, authorizeRoles("ADMIN"), createPayment);
-router.get("/payments", Authenticated, authorizeRoles("ADMIN"), getPayments);
-router.get("/payments/:paymentId", Authenticated, authorizeRoles("ADMIN"), getPaymentById);
-router.put("/payments/:paymentId", Authenticated, authorizeRoles("ADMIN"), updatePayment);
-router.delete("/payments/:paymentId", Authenticated, authorizeRoles("ADMIN"), deletePayment);
+router.post("/payments", Authenticated, authorizeRoles(["ADMIN", "ADMIN_01", "AGENT"]), createPayment);
+router.get("/payments", Authenticated, authorizeRoles(["ADMIN", "ADMIN_01", "AGENT"]), getPayments);
+router.get("/payments/:paymentId", Authenticated, authorizeRoles(["ADMIN", "ADMIN_01", "AGENT"]), getPaymentById);
+router.put("/payments/:paymentId", Authenticated, authorizeRoles(["ADMIN", "ADMIN_01", "AGENT"]), updatePayment);
+router.delete("/payments/:paymentId", Authenticated, authorizeRoles(["ADMIN", "ADMIN_01", "AGENT"]), deletePayment);
 
 module.exports = router;

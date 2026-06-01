@@ -11,10 +11,10 @@ const Authenticated = require("../middlewares/auth");
 const authorizeRoles = require("../middlewares/authorizeRole");
 
 
-router.get("/", Authenticated, authorizeRoles("ADMIN"), getAllCashTransactions);
-router.get("/:id", Authenticated, authorizeRoles("ADMIN"), getCashTransactionById);
-router.post("/", Authenticated, authorizeRoles("ADMIN"), createCashTransaction);
-router.delete("/:id", Authenticated, authorizeRoles("ADMIN"), deleteCashTransaction);
+router.get("/", Authenticated, authorizeRoles(["ADMIN", "ADMIN_01"]), getAllCashTransactions);
+router.get("/:id", Authenticated, authorizeRoles(["ADMIN", "ADMIN_01"]), getCashTransactionById);
+router.post("/", Authenticated, authorizeRoles(["ADMIN", "ADMIN_01"]), createCashTransaction);
+router.delete("/:id", Authenticated, authorizeRoles(["ADMIN", "ADMIN_01"]), deleteCashTransaction);
 
 // Route for creating maturity payments with Cashfree Payout
 

@@ -23,7 +23,12 @@ const createPayment = async (req, res) => {
 
         // If account_details is provided, check sufficient balance before creating payment
         if (account_details && account_details.account_id && amount > 0) {
-            const account = await AccountsModel.findOne({ account_id: account_details.account_id });
+            const mongoose = require("mongoose");
+            const query = [{ account_id: account_details.account_id }];
+            if (mongoose.Types.ObjectId.isValid(account_details.account_id)) {
+                query.push({ _id: account_details.account_id });
+            }
+            const account = await AccountsModel.findOne({ $or: query });
             if (!account) {
                 return res.status(400).json({
                     success: false,

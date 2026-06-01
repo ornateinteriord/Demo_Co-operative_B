@@ -169,8 +169,13 @@ const getMemberBasicInfo = async (req, res) => {
     try {
         const { memberId } = req.params;
 
-        const allMembers = await MemberModel.find({});
-        const member = allMembers.find(m => m.member_id === memberId);
+        // Use lean() so we get raw DB objects where case mismatches might exist
+        const allMembers = await MemberModel.find({}).lean();
+        const member = allMembers.find(m => 
+            (m.member_id === memberId) || 
+            (m.Member_id === memberId) || 
+            (m.MEMBER_ID === memberId)
+        );
 
         if (!member) {
             return res.status(404).json({
@@ -190,10 +195,10 @@ const getMemberBasicInfo = async (req, res) => {
             success: true,
             message: "Member info fetched successfully",
             data: {
-                member_id: member.member_id,
-                name: member.name,
-                contact: member.contactno,
-                email: member.emailid
+                member_id: member.member_id || member.Member_id,
+                name: member.name || member.Name,
+                contact: member.contactno || member.mobileno,
+                email: member.emailid || member.email
             }
         });
     } catch (error) {
@@ -212,8 +217,11 @@ const getMemberAccountsPublic = async (req, res) => {
         const { memberId } = req.params;
 
         // Verify member exists and is active
-        const allMembers = await MemberModel.find({});
-        const member = allMembers.find(m => m.member_id === memberId);
+        const allMembers = await MemberModel.find({}).lean();
+        const member = allMembers.find(m => 
+            (m.member_id === memberId) || 
+            (m.Member_id === memberId)
+        );
 
         if (!member) {
             return res.status(404).json({
@@ -230,13 +238,14 @@ const getMemberAccountsPublic = async (req, res) => {
         }
 
         // Get accounts with account group names but WITHOUT balances
-        // Handle both string and number types for member_id
         const accounts = await AccountsModel.aggregate([
             {
                 $match: {
                     $or: [
-                        { member_id: memberId },           // String comparison
-                        { member_id: parseInt(memberId) }   // Number comparison
+                        { member_id: memberId },
+                        { member_id: parseInt(memberId) },
+                        { Member_id: memberId },
+                        { MEMBER_ID: memberId }
                     ],
                     status: "active"
                 }
@@ -257,13 +266,12 @@ const getMemberAccountsPublic = async (req, res) => {
             },
             {
                 $project: {
-                    _id: 0,
+                    _id: 1,
                     account_id: 1,
-                    account_no: 1,
+                    account_no: { $ifNull: ["$account_no", { $ifNull: ["$Account_no", "$ACCOUNT_NO"] }] },
                     account_type: 1,
                     account_group_name: "$groupInfo.account_group_name",
                     date_of_opening: 1
-                    // Explicitly NOT including account_amount for privacy
                 }
             },
             {
