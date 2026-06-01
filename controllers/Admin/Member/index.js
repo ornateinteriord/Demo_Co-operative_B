@@ -301,23 +301,42 @@ const getMemberById = async (req, res) => {
         const { memberId } = req.params;
 
         const searchRegex = new RegExp(`^${memberId}$`, "i");
+        const mongoose = require("mongoose");
+        const db = mongoose.connection.db;
+        
+        let objectIdQuery;
+        try {
+            if (mongoose.Types.ObjectId.isValid(memberId)) {
+                objectIdQuery = new mongoose.Types.ObjectId(memberId);
+            }
+        } catch(e) {}
 
-        const db = require("mongoose").connection.db;
-        let member = await db.collection("member_tbl").findOne({
+        const query = {
             $or: [
                 { member_id: searchRegex },
                 { Member_id: searchRegex }
             ]
-        });
+        };
+        
+        if (objectIdQuery) {
+            query.$or.push({ _id: objectIdQuery });
+        }
+
+        let member = await db.collection("member_tbl").findOne(query);
 
         if (!member) {
             // Check if it's an admin ID or username
-            const admin = await db.collection("admin_tbl").findOne({
+            const adminQuery = {
                 $or: [
                     { id: parseInt(memberId) || memberId },
                     { username: searchRegex }
                 ]
-            });
+            };
+            if (objectIdQuery) {
+                adminQuery.$or.push({ _id: objectIdQuery });
+            }
+
+            const admin = await db.collection("admin_tbl").findOne(adminQuery);
             
             if (admin) {
                 // Map admin fields to expected member fields for the frontend sidebar
