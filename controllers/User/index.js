@@ -6,7 +6,9 @@ const MemberModel = require("../../models/member.model");
 const getUserTransactions = async (req, res) => {
     try {
         const { memberId } = req.params;
-        const { account_type } = req.query;
+        const { account_type, type } = req.query;
+        
+        const filterAccountType = account_type || type;
 
         if (!memberId) {
             return res.status(400).json({
@@ -17,8 +19,8 @@ const getUserTransactions = async (req, res) => {
 
         // Build query filter
         const filter = { member_id: memberId };
-        if (account_type) {
-            filter.account_type = account_type;
+        if (filterAccountType && filterAccountType !== 'all') {
+            filter.account_type = filterAccountType;
         }
 
         // Find all transactions for this member (optionally filtered by account type)
