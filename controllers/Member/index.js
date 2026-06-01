@@ -106,7 +106,8 @@ const updateMyProfile = async (req, res) => {
 
         // Validate that the logged-in user is updating their own profile
         const loggedInMemberId = req.user.memberId || req.user.userId;
-        if (memberId !== loggedInMemberId) {
+        const loggedInObjectId = req.user.id;
+        if (memberId !== loggedInMemberId && memberId !== loggedInObjectId) {
             return res.status(403).json({
                 success: false,
                 message: "You can only update your own profile"
@@ -130,7 +131,13 @@ const updateMyProfile = async (req, res) => {
 
         // Find and update the member
         const updatedMember = await MemberModel.findOneAndUpdate(
-            { member_id: memberId },
+            { 
+                $or: [
+                    { member_id: memberId },
+                    // Only match _id if memberId is a valid ObjectId
+                    ...(memberId && memberId.length === 24 ? [{ _id: memberId }] : [])
+                ]
+            },
             { $set: updateData },
             { new: true, runValidators: true }
         );

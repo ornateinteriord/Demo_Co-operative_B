@@ -107,6 +107,10 @@ const memberSchema = mongoose.Schema(
       type: String,
       default: null,
     },
+    profile_image: {
+      type: String,
+      default: null,
+    },
     member_signature: {
       type: String,
       default: null,
