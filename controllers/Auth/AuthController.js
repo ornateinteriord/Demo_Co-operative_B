@@ -236,7 +236,17 @@ const login = async (req, res) => {
     const { username, password } = req.body;
 
     // Find user by user_name
-    const user = await UserModel.findOne({ user_name: username });
+    let user = await UserModel.findOne({ user_name: username }).lean();
+
+    if (!user) {
+      // Fallback: Check MemberModel
+      user = await MemberModel.findOne({
+        $or: [
+          { member_id: username },
+          { Member_id: username }
+        ]
+      }).lean();
+    }
 
     if (!user) {
       return res
@@ -252,13 +262,17 @@ const login = async (req, res) => {
         .json({ success: false, message: "Incorrect username or password" });
     }
 
+    const role = user.user_role || user.role || "USER";
+    const userId = user.user_id || user.member_id || user.Member_id;
+    const userName = user.user_name || user.name || user.Name || userId;
+
     // Generate JWT token
     const token = jwt.sign(
       {
         id: user._id,
-        role: user.user_role,
-        userId: user.user_id,
-        user_name: user.user_name,
+        role: role,
+        userId: userId,
+        user_name: userName,
       },
       process.env.JWT_SECRET,
       { expiresIn: "24h" }
@@ -266,11 +280,10 @@ const login = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      role: user.user_role,
+      role: role,
       user: user,
       token,
-      message: `${user.user_role.charAt(0).toUpperCase() + user.user_role.slice(1).toLowerCase()
-        } login successful`,
+      message: `${role.charAt(0).toUpperCase() + role.slice(1).toLowerCase()} login successful`,
     });
 
   } catch (error) {
